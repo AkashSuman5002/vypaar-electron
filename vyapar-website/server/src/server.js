@@ -22,6 +22,7 @@ const adminPassword = process.env.ADMIN_PASSWORD;
 const authSecret = process.env.AUTH_SECRET;
 const githubRepoOwner = process.env.GITHUB_REPO_OWNER || "AkashSuman5002";
 const githubRepoName = process.env.GITHUB_REPO_NAME || "vypaar-website";
+const githubToken = process.env.GITHUB_TOKEN;
 const githubApiBase = `https://api.github.com/repos/${githubRepoOwner}/${githubRepoName}`;
 const releaseCacheTtlMs = Number(process.env.RELEASE_CACHE_TTL_MS || 300000);
 const releaseCache = {
@@ -107,7 +108,8 @@ async function fetchGithubJson(endpoint) {
     headers: {
       Accept: "application/vnd.github+json",
       "X-GitHub-Api-Version": "2022-11-28",
-      "User-Agent": "vyapar-website"
+      "User-Agent": "vyapar-website",
+      ...(githubToken ? { Authorization: `Bearer ${githubToken}` } : {})
     }
   });
 
