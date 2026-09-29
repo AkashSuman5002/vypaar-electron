@@ -1,0 +1,25 @@
+# Local history and editor files
+.history/
+.vscode/
+
+# Dependencies and generated builds
+**/node_modules/
+**/dist/
+**/build/
+coverage/
+
+# Secrets and local data
+.env
+.env.*
+!.env.example
+**/*.db
+**/*.db-shm
+**/*.db-wal
+
+# Local installer binaries
+*.exe
+
+# Runtime and backup data
+**/backups/
+**/uploads/
+**/whatsapp-sessions/
