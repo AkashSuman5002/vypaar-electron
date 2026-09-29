@@ -415,7 +415,7 @@ function sanitizeDownloadFilename(filename) {
   return basename;
 }
 
-app.get("/api/download/installer", (req, res) => {
+app.get("/api/download/installer", async (req, res) => {
   try {
     const safeName = sanitizeDownloadFilename(downloadConfig.fileName);
     if (!safeName) {
@@ -432,9 +432,15 @@ app.get("/api/download/installer", (req, res) => {
     try {
       stat = fs.statSync(resolvedPath);
     } catch {
-      return res.status(404).json({
-        error: "Latest desktop application is currently unavailable. Please try again later."
-      });
+      try {
+        const { latest } = await getGithubReleases();
+        if (latest?.installer?.browser_download_url) {
+          return res.redirect(latest.installer.browser_download_url);
+        }
+      } catch (error) {
+        console.error("Error resolving GitHub installer:", error.message);
+      }
+      return res.status(404).json({ error: "Latest desktop application is currently unavailable. Please try again later." });
     }
 
     res.setHeader("Content-Disposition", `attachment; filename="${safeName}"; filename*=UTF-8''${encodeURIComponent(safeName)}`);
@@ -460,7 +466,7 @@ app.get("/api/download/installer", (req, res) => {
   }
 });
 
-app.get("/api/download/info", (req, res) => {
+app.get("/api/download/info", async (req, res) => {
   try {
     const safeName = sanitizeDownloadFilename(downloadConfig.fileName);
     if (!safeName) {
@@ -484,10 +490,23 @@ app.get("/api/download/info", (req, res) => {
     try {
       stat = fs.statSync(resolvedPath);
     } catch {
-      return res.status(404).json({
-        available: false,
-        error: "Latest desktop application is currently unavailable. Please try again later."
-      });
+      try {
+        const { latest } = await getGithubReleases();
+        const installer = latest?.installer;
+        if (installer?.browser_download_url) {
+          return res.json({
+            available: true,
+            fileName: installer.name,
+            version: latest.version,
+            size: installer.size,
+            sizeLabel: latest.file_size_label,
+            downloadUrl: "/api/download/installer"
+          });
+        }
+      } catch (error) {
+        console.error("Error resolving GitHub installer info:", error.message);
+      }
+      return res.status(404).json({ available: false, error: "Latest desktop application is currently unavailable. Please try again later." });
     }
 
     const sizeMB = (stat.size / (1024 * 1024)).toFixed(1);
