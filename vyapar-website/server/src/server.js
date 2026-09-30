@@ -24,6 +24,10 @@ const githubRepoOwner = process.env.GITHUB_REPO_OWNER || "AkashSuman5002";
 const githubRepoName = process.env.GITHUB_REPO_NAME || "vypaar-website";
 const githubToken = process.env.GITHUB_TOKEN;
 const githubApiBase = `https://api.github.com/repos/${githubRepoOwner}/${githubRepoName}`;
+const clientOrigins = (process.env.CLIENT_ORIGIN || "http://localhost:5173")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 const releaseCacheTtlMs = Number(process.env.RELEASE_CACHE_TTL_MS || 300000);
 const releaseCache = {
   latest: null,
@@ -75,7 +79,15 @@ function rateLimit(maxRequests, windowMs) {
 }
 
 app.use(helmet());
-app.use(cors({ origin: process.env.CLIENT_ORIGIN || "http://localhost:5173", credentials: true }));
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || clientOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error("Origin is not allowed by CORS"));
+  },
+  credentials: true
+}));
 app.use(express.json());
 
 function formatBytes(bytes) {
